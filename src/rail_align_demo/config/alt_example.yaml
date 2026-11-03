@@ -1,0 +1,85 @@
+# Same layout as demo.yaml with different geometry, to show that the world, URDF,
+# estimator and controller all follow the config. Values are simulation assumptions.
+rail_align:
+  marker:
+    dictionary: DICT_5X5_50
+    left_id: 3
+    right_id: 7
+    size_m: 0.22
+    spacing_m: 1.20
+    center_height_m: 0.35
+    x_m: 0.0
+  rail:
+    gauge_m: 0.60
+    width_m: 0.04
+    length_m: 5.0
+  target:
+    standoff_m: 1.60
+  vehicle:
+    wheel_radius_m: 0.09
+    wheel_width_m: 0.05
+    wheel_separation_m: 0.75
+    body_length_m: 0.70
+    body_width_m: 0.66
+    body_height_m: 0.22
+  camera:
+    forward_m: 0.38
+    height_m: 0.18
+    pitch_up_deg: 8.0
+    width_px: 1280
+    height_px: 720
+    hfov_deg: 75.0
+    rate_hz: 20.0
+    noise_stddev: 0.005
+  start_poses:
+    left:  {x: -3.20, y:  0.20, yaw_deg:  10.0}
+    right: {x: -3.20, y: -0.20, yaw_deg: -10.0}
+    left_inward:  {x: -3.20, y:  0.20, yaw_deg: -10.0}
+    right_outward: {x: -3.20, y: -0.20, yaw_deg: -10.0}
+    blind: {x: -3.20, y:  0.10, yaw_deg: 180.0}
+  tolerance:
+    lateral_m: 0.02
+    heading_deg: 2.0
+    longitudinal_m: 0.03
+    hold_s: 2.0
+  safety:
+    detect_timeout_s: 0.3
+    image_timeout_s: 0.5
+  estimator:
+    max_reprojection_px: 3.0
+    max_spacing_error_m: 0.15
+    max_height_error_m: 0.10
+    max_tilt_deg: 10.0
+    max_marker_distance_m: 5.5
+  control:
+    rate_hz: 20.0
+    start_delay_s: 2.0
+    v_max: 0.15
+    v_min: 0.03
+    w_max: 0.40
+    w_min: 0.04
+    k_longitudinal: 0.5
+    k_heading: 1.5
+    k_lateral: 3.0
+    min_approach_angle_deg: 15.0 # always allowed, even when the view limit below is tighter
+    max_approach_angle_deg: 40.0
+    view_margin_deg: 5.0         # keep both markers this far inside the horizontal view
+    align_tolerance_deg: 5.0
+    realign_threshold_deg: 20.0
+    arrive_longitudinal_m: 0.01
+    lateral_inner_m: 0.015
+    heading_inner_deg: 0.5
+    longitudinal_inner_m: 0.02
+    retreat_speed: 0.08
+    retreat_longitudinal_m: 0.50
+    max_retreats: 3
+  search:
+    turn_rate: 0.25          # rad/s, in place, only until the marker pair is first found
+    max_angle_deg: 360.0     # give up (FAILED) after turning this far
+
+  rail_drive:
+    enabled: true
+    pause_after_aligned_s: 2.0
+    speed: 0.20
+    acceleration: 0.2
+    travel_m: 4.5

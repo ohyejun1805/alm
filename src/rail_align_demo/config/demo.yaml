@@ -1,0 +1,105 @@
+# Single source of truth for the world, the vehicle URDF, perception and control.
+# Every physical dimension below is a SIMULATION ASSUMPTION, not a measured value.
+rail_align:
+  marker:
+    dictionary: DICT_4X4_50
+    left_id: 10              # marker on the +Y side when facing into the rail
+    right_id: 20             # marker on the -Y side
+    size_m: 0.20             # black square edge length
+    spacing_m: 1.10          # center-to-center distance; plates must clear the wheels
+    center_height_m: 0.30    # marker center above the ground
+    x_m: 0.0                 # marker plane position along the rail axis (0 = entry line)
+
+  rail:
+    gauge_m: 0.50            # distance between the two rail center lines (visual only)
+    width_m: 0.03
+    length_m: 6.0            # rails run from the entry line (x = 0) into +X
+
+  target:
+    standoff_m: 1.40         # stop point of the axle center, this far before the entry line
+
+  vehicle:
+    wheel_radius_m: 0.10
+    wheel_width_m: 0.04
+    # Wheel center lines; each wheel's inner edge sits just outside its rail (4 cm gap).
+    wheel_separation_m: 0.65
+    body_length_m: 0.80
+    body_width_m: 0.58       # fits between the wheels
+    body_height_m: 0.25
+
+  camera:
+    forward_m: 0.43          # lens position ahead of the axle center
+    height_m: 0.15           # lens height above the ground
+    pitch_up_deg: 5.0        # + tilts the lens upward
+    width_px: 1280
+    height_px: 720
+    hfov_deg: 80.0
+    rate_hz: 20.0
+    noise_stddev: 0.005      # Gaussian image noise (0..1 intensity scale)
+
+  # Rail frame coordinates, which coincide with the Gazebo world frame.
+  # yaw_deg + = nose rotated CCW. y + = left of the center line.
+  start_poses:
+    left:  {x: -3.00, y:  0.30, yaw_deg:  12.0}   # left of center, nose pointing further outward
+    right: {x: -3.00, y: -0.25, yaw_deg:  15.0}   # right of center, nose pointing toward center
+    left_inward:  {x: -2.80, y:  0.20, yaw_deg: -15.0}
+    right_outward: {x: -3.00, y: -0.30, yaw_deg: -12.0}
+    blind: {x: -3.00, y:  0.10, yaw_deg: 180.0}   # markers behind the camera, for the safety check
+    # Beside the rail and square to it: no marker is in view, so the cart must search first.
+    # search_direction: +1 turns CCW, -1 CW. Poses without it never move until markers appear.
+    side_left:  {x: -5.00, y:  1.50, yaw_deg: -90.0, search_direction:  1}
+    side_right: {x: -5.00, y: -1.50, yaw_deg:  90.0, search_direction: -1}
+
+  tolerance:                 # success criteria (temporary values from the request)
+    lateral_m: 0.03
+    heading_deg: 3.0
+    longitudinal_m: 0.05
+    hold_s: 1.0
+
+  safety:
+    detect_timeout_s: 0.3    # zero velocity when the marker pair has been missing this long
+    image_timeout_s: 0.5     # zero velocity when no fresh image arrived for this long
+
+  estimator:
+    max_reprojection_px: 3.0     # reject the joint pose above this RMS
+    max_spacing_error_m: 0.15    # reject when the per-marker poses disagree with spacing_m
+    max_height_error_m: 0.10     # reject when the implied axle height is off by this much
+    max_tilt_deg: 10.0           # reject when the implied vehicle roll/pitch exceeds this
+    max_marker_distance_m: 5.5   # beyond this the marker pair is too small to solve reliably
+
+  control:
+    rate_hz: 20.0
+    start_delay_s: 2.0       # stationary time with valid vision before moving
+    v_max: 0.15              # m/s
+    v_min: 0.03              # m/s
+    w_max: 0.40              # rad/s
+    w_min: 0.04              # rad/s, smallest rotate-in-place command
+    k_longitudinal: 0.5      # v = k * longitudinal error
+    k_heading: 1.5           # w = k * heading difference
+    k_lateral: 3.0           # heading reference = -atan(k * lateral error)
+    min_approach_angle_deg: 15.0 # always allowed, even when the view limit below is tighter
+    max_approach_angle_deg: 40.0
+    view_margin_deg: 5.0         # keep both markers this far inside the horizontal view
+    align_tolerance_deg: 5.0     # rotate-in-place until this close to the heading reference
+    realign_threshold_deg: 20.0  # fall back to rotate-in-place when further than this
+    arrive_longitudinal_m: 0.01  # approach ends once this close to the stop point
+    lateral_inner_m: 0.02        # lateral error accepted on arrival
+    heading_inner_deg: 0.5       # final rotate-in-place target
+    longitudinal_inner_m: 0.02   # longitudinal trim target
+    retreat_speed: 0.08          # m/s, backing up after arriving off-center
+    retreat_longitudinal_m: 0.50
+    max_retreats: 3
+
+  # After ALIGNED the markers soon leave the camera view, so the rail section is driven on
+  # wheel-encoder odometry: straight along the rail direction last measured by the camera.
+  # Used only by start poses that set search_direction.
+  search:
+    turn_rate: 0.25          # rad/s, in place, only until the marker pair is first found
+    max_angle_deg: 360.0     # give up (FAILED) after turning this far
+
+  rail_drive:
+    enabled: true
+    pause_after_aligned_s: 3.0   # stay stopped this long before entering the rail
+    speed: 0.25                  # m/s
+    acceleration: 0.2            # m/s^2
+    travel_m: 5.5                # distance from the stop point to the end of the run

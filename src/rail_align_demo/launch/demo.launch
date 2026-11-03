@@ -1,0 +1,62 @@
+<launch>
+  <!-- Start pose: a key under start_poses in the config, or "custom" with x/y/yaw_deg. -->
+  <arg name="start" default="left"/>
+  <arg name="x" default=""/>
+  <arg name="y" default=""/>
+  <arg name="yaw_deg" default=""/>
+
+  <arg name="config" default="$(find rail_align_demo)/config/demo.yaml"/>
+  <arg name="gui" default="true"/>                <!-- Gazebo window -->
+  <arg name="view" default="$(arg gui)"/>         <!-- annotated camera window -->
+  <arg name="control" default="true"/>            <!-- false: perception only, vehicle stays put -->
+  <arg name="rail_drive" default="true"/>         <!-- false: stop for good at ALIGNED -->
+  <arg name="record" default="true"/>             <!-- write CSV and summary to results_dir -->
+  <arg name="video" default="false"/>             <!-- save an MP4 of all camera views to results_dir/videos -->
+  <arg name="exit_on_finish" default="false"/>    <!-- shut down after ALIGNED/FAILED/timeout -->
+  <arg name="results_dir" default="$(find rail_align_demo)/../../results"/>
+  <arg name="world_file" default="$(env HOME)/.ros/rail_align_demo/rail_entry.world"/>
+
+  <rosparam command="load" file="$(arg config)"/>
+  <param name="/rail_align/rail_drive/enabled" value="$(arg rail_drive)"/>
+  <!-- Evaluated while the launch file is parsed, before gzserver starts. -->
+  <param name="/rail_align/generated_world"
+         command="rosrun rail_align_demo generate_world.py --config $(arg config) --out $(arg world_file) --overview-camera $(arg video)"/>
+  <param name="/robot_description"
+         command="$(find xacro)/xacro $(find rail_align_demo)/urdf/rail_cart.urdf.xacro config:=$(arg config) chase_camera:=$(arg video)"/>
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(arg world_file)"/>
+    <arg name="gui" value="$(arg gui)"/>
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/>
+  </include>
+
+  <node pkg="rail_align_demo" type="spawn_robot.py" name="spawn_robot" output="screen">
+    <param name="start" value="$(arg start)"/>
+    <param name="x" value="$(arg x)" type="str"/>
+    <param name="y" value="$(arg y)" type="str"/>
+    <param name="yaw_deg" value="$(arg yaw_deg)" type="str"/>
+  </node>
+
+  <node pkg="rail_align_demo" type="aruco_rail_estimator.py" name="aruco_rail_estimator" output="screen"/>
+
+  <node if="$(arg control)" pkg="rail_align_demo" type="alignment_controller.py"
+        name="alignment_controller" output="screen">
+    <param name="start" value="$(arg start)"/>
+  </node>
+
+  <node if="$(arg record)" pkg="rail_align_demo" type="run_recorder.py" name="run_recorder"
+        output="screen" required="$(arg exit_on_finish)">
+    <param name="scenario" value="$(arg start)"/>
+    <param name="results_dir" value="$(arg results_dir)"/>
+    <param name="exit_on_finish" value="$(arg exit_on_finish)"/>
+  </node>
+
+  <node if="$(arg video)" pkg="rail_align_demo" type="video_recorder.py" name="video_recorder" output="screen">
+    <param name="scenario" value="$(arg start)"/>
+    <param name="output_dir" value="$(arg results_dir)/videos"/>
+  </node>
+
+  <node if="$(arg view)" pkg="rqt_image_view" type="rqt_image_view" name="camera_view"
+        args="/rail_align/debug_image"/>
+</launch>

@@ -1,0 +1,5 @@
+occlude | PASS | zero command 0.44 s after covering; state=SAFETY_STOP; estimator reason=missing_marker_10; all zero for 3 s=True; drift=0.0048 m; resumed after uncovering=True
+pause | PASS | zero command 0.30 s (wall clock) after images stopped; state=SAFETY_STOP; all zero for 3 s=True; resumed after unpause=True
+railpause | PASS | zero command 0.49 s (wall clock) after images stopped; state=SAFETY_STOP; all zero for 3 s=True; resumed after unpause=True
+nofeed | PASS | zero command 0.34 s after estimator was killed; state=SAFETY_STOP; all zero for 3 s=True; drift=0.0033 m
+blind | PASS | estimator reason=missing_marker_10; 160 commands in 8 s all zero=True; drift=0.0013 m

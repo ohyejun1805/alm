@@ -1,0 +1,9 @@
+build/
+devel/
+install/
+__pycache__/
+*.pyc
+src/CMakeLists.txt
+.vscode/
+results/logs/
+results/images/
